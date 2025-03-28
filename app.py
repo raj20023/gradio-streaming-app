@@ -1,5 +1,6 @@
 import gradio as gr
 import pandas as pd
+import os
 
 # Mock Data
 STREAMER_PROFILE = {
@@ -99,4 +100,5 @@ with gr.Blocks(theme=gr.themes.Soft(), title="StreamLive 2025") as demo:
             create_profile()
 
 if __name__ == "__main__":
-    demo.launch()
+    port = int(os.environ.get("PORT", 7860))  # Render provides a PORT env variable
+    demo.launch(server_name="0.0.0.0", server_port=port)
