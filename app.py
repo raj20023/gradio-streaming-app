@@ -1,16 +1,21 @@
 import gradio as gr
-import random
-from datetime import datetime
 from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
+import os
 
-# Authenticate with Google API
 def authenticate_youtube():
-    flow = InstalledAppFlow.from_client_secrets_file(
-        'client_secret.json', 
-        scopes=['https://www.googleapis.com/auth/youtube.readonly']
-    )
+    client_config = {
+        "web": {
+            "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
+            "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+            "auth_uri": os.environ.get("GOOGLE_AUTH_URI"),
+            "token_uri": os.environ.get("GOOGLE_TOKEN_URI"),
+            "redirect_uris": os.environ.get("GOOGLE_REDIRECT_URIS").split(","),
+            "javascript_origins": os.environ.get("GOOGLE_JAVASCRIPT_ORIGINS").split(","),
+        }
+    }
 
+    flow = InstalledAppFlow.from_client_config(client_config, ['https://www.googleapis.com/auth/youtube.readonly'])
+    
     auth_url, _ = flow.authorization_url()
     print(f"Please visit this URL to authorize the application: {auth_url}")
 
