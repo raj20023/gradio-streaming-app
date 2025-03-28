@@ -1,49 +1,5 @@
 import gradio as gr
-from google_auth_oauthlib.flow import InstalledAppFlow
-import os
-
-def authenticate_youtube():
-    client_config = {
-        "web": {
-            "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
-            "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
-            "auth_uri": os.environ.get("GOOGLE_AUTH_URI"),
-            "token_uri": os.environ.get("GOOGLE_TOKEN_URI"),
-            "redirect_uris": os.environ.get("GOOGLE_REDIRECT_URIS").split(","),
-            "javascript_origins": os.environ.get("GOOGLE_JAVASCRIPT_ORIGINS").split(","),
-        }
-    }
-
-    flow = InstalledAppFlow.from_client_config(client_config, ['https://www.googleapis.com/auth/youtube.readonly'])
-    
-    auth_url, _ = flow.authorization_url()
-    print(f"Please visit this URL to authorize the application: {auth_url}")
-
-    # Manually enter the authorization code
-    auth_code = input("Enter the authorization code: ").strip()
-
-    creds = flow.fetch_token(code=auth_code)
-    return creds
-
-youtube = authenticate_youtube()
-
-def get_live_stream():
-    request = youtube.search().list(
-        part="snippet",
-        eventType="live",
-        type="video",
-        q="tech live stream"  # Customize this query
-    )
-    response = request.execute()
-    
-    if response["items"]:
-        video_id = response["items"][0]["id"]["videoId"]
-        return f"https://www.youtube.com/embed/{video_id}"
-    else:
-        return "No live streams found."
-
-live_stream_url = get_live_stream()
-
+import pandas as pd
 
 # Mock Data
 STREAMER_PROFILE = {
@@ -67,14 +23,16 @@ TRENDING_STREAMS = [
     {"title": "AI Workshop Live", "viewers": "4.7K", "category": "Tech"}
 ]
 
+def create_dataframe(data):
+    df = pd.DataFrame(data)
+    return df.style.highlight_max(color = 'lightgreen', axis = 0)
+
 # Components
 def create_video_player():
-    live_url = get_live_stream()
-    youtube_embed = f"""
-    <iframe width="100%" height="400" src="{live_url}" title="YouTube Live Stream" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    youtube_embed = """
+    <iframe width="100%" height="400" src="https://www.youtube.com/embed/4xDzrJKXOOY?si=aKjYZytqK1_eRVjQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
     """
     return gr.HTML(youtube_embed)
-
 
 def create_chat_interface():
     with gr.Blocks() as chat:
@@ -102,11 +60,7 @@ def create_profile():
         gr.Markdown(f"## {STREAMER_PROFILE['name']}")
         gr.Markdown(f"**Followers:** {STREAMER_PROFILE['followers']}")
         gr.Markdown(f"**Total Streams:** {STREAMER_PROFILE['total_streams']}")
-        gr.DataFrame(
-            value=STREAMER_PROFILE["past_streams"],
-            headers=["Title", "Views", "Date"],
-            row_count=2
-        )
+        gr.DataFrame(create_dataframe(STREAMER_PROFILE["past_streams"]))
 
 def create_donation():
     with gr.Group():  # Modern alternative
@@ -139,17 +93,10 @@ with gr.Blocks(theme=gr.themes.Soft(), title="StreamLive 2025") as demo:
                     create_chat_interface()
             
         with gr.TabItem("Trending"):
-            gr.DataFrame(
-                value=TRENDING_STREAMS,
-                headers=["Title", "Viewers", "Category"],
-                row_count=2
-            )
+            gr.DataFrame(create_dataframe(TRENDING_STREAMS))
             
         with gr.TabItem("Profile"):
             create_profile()
 
-app = gr.Interface(fn=demo, inputs="text", outputs="text")
-_, port, _ = app.launch(server_name="localhost", server_port=5000, share=False)
-
-print(f"Use this Redirect URI in Google Cloud: http://localhost:{port}/")
-
+if __name__ == "__main__":
+    demo.launch()
